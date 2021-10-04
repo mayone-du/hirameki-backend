@@ -93,3 +93,64 @@ class Profile(models.Model):
 
     def __str__(self) -> str:
         return self.profile_name
+
+
+# アイデアのトピック
+class Topic(models.Model):
+    name = models.CharField(max_length=10,
+                            unique=True,
+                            null=False,
+                            blank=False)
+
+
+# しっかりしたアイデア
+class Idea(models.Model):
+    idea_creator = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                     related_name='idea_creator',
+                                     on_delete=models.CASCADE)
+    # topics = models.ManyToManyField()
+    title = models.CharField(max_length=30)
+    content = models.TextField(max_length=3000)
+    is_published = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    # アイデアにいいねしたユーザー
+    likes = models.ManyToManyField(settings.AUTH_USER_MODEL,
+                                   related_name='likes',
+                                   blank=True)
+
+
+# タイトルだけのメモ
+class Memo(models.Model):
+    memo_creator = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                     related_name='memo_creator',
+                                     on_delete=models.CASCADE)
+    title = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_published = models.BooleanField(default=False)
+
+
+# アイデアに良いねしたときの中間テーブル
+class IdeaLike(models.Model):
+    like_user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                  related_name='like_user',
+                                  on_delete=models.CASCADE)
+    target_idea = models.ForeignKey(Idea,
+                                    related_name='target_post',
+                                    on_delete=models.CASCADE)
+
+
+# TODO: アイデアやメモ、コメントのためのコメント
+class Comment(models.Model):
+    commentor = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                  related_name='commentor',
+                                  on_delete=models.CASCADE)
+    content = models.TextField(max_length=1000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+# 通知
+class Notification(models.Model):
+    notificator = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                    related_name='notificator',
+                                    on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
