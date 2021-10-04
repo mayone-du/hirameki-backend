@@ -7,12 +7,9 @@ from django.db import models
 
 def upload_profile_path(instance, filename):
     ext = filename.split('.')[-1]
-    return '/'.join(['profiles', str(instance.related_user.id)+str(".")+str(ext)])
-
-def upload_task_path(instance, filename):
-    ext = filename.split('.')[-1]
-    return '/'.join(['tasks', str(instance.create_user.id)+str(instance.title)+str(".")+str(ext)])
-
+    return '/'.join(
+        ['profiles',
+         str(instance.related_user.id) + str(".") + str(ext)])
 
 
 class UserManager(BaseUserManager):
@@ -48,7 +45,6 @@ class UserManager(BaseUserManager):
         return user
 
 
-
 # ユーザー
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=100)
@@ -64,6 +60,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
 
 # ユーザーに1対1で紐づくプロフィール
 class Profile(models.Model):
@@ -96,27 +93,3 @@ class Profile(models.Model):
 
     def __str__(self) -> str:
         return self.profile_name
-
-
-
-class Profile(models.Model):
-    related_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, related_name='related_user',on_delete=models.CASCADE)
-    profile_name = models.CharField(max_length=20)
-    website_url = models.URLField()
-
-# タスク
-class Task(models.Model):
-    create_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, related_name='create_user',
-        on_delete=models.CASCADE
-    )
-    title = models.CharField(max_length=100, default='',null=False, blank=False)
-    content = models.CharField(max_length=1000, default='',null=True, blank=True)
-    task_image = models.ImageField(
-        blank=True, null=True, upload_to=upload_task_path)
-    is_done = models.BooleanField(null=False, blank=False, default=False)
-    created_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.title
