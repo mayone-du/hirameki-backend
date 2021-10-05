@@ -1,8 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import (AbstractBaseUser, BaseUserManager,
                                         PermissionsMixin)
-from django.contrib.contenttypes import fields
-from django.contrib.contenttypes.models import ContentType
 from django.core.mail import send_mail
 from django.db import models
 
@@ -92,13 +90,14 @@ class Profile(models.Model):
     twitter_username = models.CharField(max_length=30, null=True, blank=True)
     # 自分のWebサイトのURL
     website_url = models.URLField(null=True, blank=True)
-    # フォロー機能 自分がフォローしているユーザーはプロフィールモデルから、フォローされているユーザーはユーザーモデルから逆参照で取得
-    following_users = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        related_name='following_users',
-        blank=True,
-        default=[],
-    )
+
+    # # フォロー機能 自分がフォローしているユーザーはプロフィールモデルから、フォローされているユーザーはユーザーモデルから逆参照で取得
+    # following_users = models.ManyToManyField(
+    #     settings.AUTH_USER_MODEL,
+    #     related_name='following_users',
+    #     blank=True,
+    #     default=[],
+    # )
 
     def __str__(self) -> str:
         return self.profile_name
@@ -114,6 +113,7 @@ class Follow(models.Model):
     followed_user = models.ForeignKey(settings.AUTH_USER_MODEL,
                                       related_name='followed_user',
                                       on_delete=models.CASCADE)
+    # フォローしているかの判定フラグ
     is_following = models.BooleanField(default=False)
 
 
@@ -130,7 +130,7 @@ class Idea(models.Model):
     idea_creator = models.ForeignKey(settings.AUTH_USER_MODEL,
                                      related_name='idea_creator',
                                      on_delete=models.CASCADE)
-    # 関連するトピック
+    # 関連するトピックを配列形式で保存
     topics = models.ManyToManyField(
         Topic,
         related_name='topics',
@@ -141,7 +141,6 @@ class Idea(models.Model):
     content = models.TextField(max_length=3000)
     is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    # likes = fields.GenericRelation(Like)
 
 
 # タイトルだけのメモ
@@ -159,12 +158,25 @@ class Comment(models.Model):
     commentor = models.ForeignKey(settings.AUTH_USER_MODEL,
                                   related_name='commentor',
                                   on_delete=models.CASCADE)
-    # target_type = models.Choices(choices=POST_CHOISES, required=True)
     # 対象のコメントのモデルタイプ
     comment_target_type = models.CharField(null=False,
                                            blank=False,
+                                           max_length=50,
                                            choices=POST_CHOISES)
+    comment_idea = models.ForeignKey(Idea,
+                                     null=True,
+                                     related_name='comment_idea',
+                                     on_delete=models.CASCADE)
+    comment_memo = models.ForeignKey(Memo,
+                                     null=True,
+                                     related_name='comment_memo',
+                                     on_delete=models.CASCADE)
+
     content = models.TextField(max_length=1000)
+    # 変更されたかのフラグ
+    is_modified = models.BooleanField(default=False)
+    # 公開されているか(デフォルトでは普通に公開されている)
+    is_published = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -173,20 +185,25 @@ class Like(models.Model):
     liked_user = models.ForeignKey(settings.AUTH_USER_MODEL,
                                    related_name='liked_user',
                                    on_delete=models.CASCADE)
-    # 対象の投稿
-    # like_target_type = models.ForeignKey(Idea,
-    #                                      related_name='like_target_type',
-    #                                      on_delete=models.CASCADE)
-    like_target_type = models.ForeignKey(ContentType,
-                                         related_name='like_target_type',
-                                         on_delete=models.CASCADE)
-    target_id = models.PositiveIntegerField()
-    target_object = fields.GenericForeignKey('like_target_type', 'target_id')
-    # post_type = models.Choices(
-    #     choices=POST_CHOISES,
-    #     required=True,
-    # )
-
+    # いいねの対象の投稿タイプ
+    target_type = models.CharField(max_length=50,
+                                   choices=POST_CHOISES,
+                                   null=False,
+                                   blank=False)
+    # 投稿タイプによって外部参照キーを変更
+    liked_idea = models.ForeignKey(Idea,
+                                   null=True,
+                                   related_name='liked_idea',
+                                   on_delete=models.CASCADE)
+    liked_memo = models.ForeignKey(Memo,
+                                   null=True,
+                                   related_name='liked_memo',
+                                   on_delete=models.CASCADE)
+    liked_comment = models.ForeignKey(Comment,
+                                      null=True,
+                                      related_name='liked_comment',
+                                      on_delete=models.CASCADE)
+    # いいねをしているかのフラグ
     is_liked = models.BooleanField(default=False)
 
 
