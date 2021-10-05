@@ -11,9 +11,11 @@ from graphql_relay import from_global_id
 
 from api.validation import validate_token
 
-from .models import Profile, User
+from .models import (Announce, Comment, Follow, Idea, Like, Memo, Notification,
+                     Profile, Thred, Topic, User)
 
 
+# ユーザー
 class UserNode(DjangoObjectType):
     class Meta:
         model = User
@@ -32,6 +34,89 @@ class ProfileNode(DjangoObjectType):
         filter_fields = {
             'profile_name': ['exact', 'icontains'],
             'self_introduction': ['exact', 'icontains'],
+        }
+        interfaces = (relay.Node, )
+
+
+class TopicNode(DjangoObjectType):
+    class Meta:
+        model = Topic
+        filter_fields = {
+            'name': ['exact', 'icontains'],
+        }
+        interfaces = (relay.Node, )
+
+
+class IdeaNode(DjangoObjectType):
+    class Meta:
+        model = Idea
+        filter_fields = {
+            'idea_creator': ['exact', 'icontains'],
+            'title': ['exact', 'icontains'],
+            'content': ['exact', 'icontains'],
+            'is_published': ['exact'],
+        }
+        interfaces = (relay.Node, )
+
+
+class MemoNode(DjangoObjectType):
+    class Meta:
+        model = Memo
+        filter_fields = {
+            'memo_creator': ['exact', 'icontains'],
+            'title': ['exact', 'icontains'],
+            'is_published': ['exact'],
+        }
+        interfaces = (relay.Node, )
+
+
+class ThreadNode(DjangoObjectType):
+    class Meta:
+        model = Thred
+        filter_fields = {
+            'thread_target_type': ['exact', 'icontains'],
+        }
+        interfaces = (relay.Node, )
+
+
+class CommentNode(DjangoObjectType):
+    class Meta:
+        model = Comment
+        filter_fields = {
+            'commentor': ['exact', 'icontains'],
+            'target_thread': ['exact'],
+        }
+        interfaces = (relay.Node, )
+
+
+class LikeNode(DjangoObjectType):
+    class Meta:
+        model = Like
+        filter_fields = {
+            'liked_user': ['exact'],
+            'like_target_type': ['exact'],
+            'is_liked': ['exact'],
+        }
+        interfaces = (relay.Node, )
+
+
+class NotificationNode(DjangoObjectType):
+    class Meta:
+        model = Notification
+        filter_fields = {
+            'notificator': ['exact'],
+            'notification_reciever': ['exact'],
+            'is_checked': ['exact'],
+        }
+        interfaces = (relay.Node, )
+
+
+class AnnounceNode(DjangoObjectType):
+    class Meta:
+        model = Announce
+        filter_fields = {
+            'title': ['exact', 'icontains'],
+            'content': ['exact', 'icontains'],
         }
         interfaces = (relay.Node, )
 

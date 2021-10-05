@@ -18,7 +18,7 @@ LIKE_CHOICES = (
     ('Comment', 'コメント'),
 )
 
-COMMENT_CHOICES = (
+THREAD_CHOICES = (
     ('Idea', 'アイデア'),
     ('Memo', 'メモ'),
 )
@@ -165,11 +165,11 @@ class Memo(models.Model):
 
 # 対象の投稿ごとにスレッドを作れる
 class Thred(models.Model):
-    # 対象のコメントのモデルタイプ
-    comment_target_type = models.CharField(null=False,
-                                           blank=False,
-                                           max_length=50,
-                                           choices=COMMENT_CHOICES)
+    # 対象の投稿のモデルタイプ
+    thread_target_type = models.CharField(null=False,
+                                          blank=False,
+                                          max_length=50,
+                                          choices=THREAD_CHOICES)
     # 投稿タイプによって外部参照キーを変更
     target_idea = models.ForeignKey(Idea,
                                     null=True,
