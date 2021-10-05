@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.contrib.auth.models import (AbstractBaseUser, BaseUserManager,
                                         PermissionsMixin)
+from django.contrib.contenttypes import fields
+from django.contrib.contenttypes.models import ContentType
 from django.core.mail import send_mail
 from django.db import models
 
@@ -10,6 +12,13 @@ def upload_profile_path(instance, filename):
     return '/'.join(
         ['profiles',
          str(instance.related_user.id) + str(".") + str(ext)])
+
+
+POST_CHOISES = (
+    ('Idea', 'アイデア'),
+    ('Memo', 'メモ'),
+    ('Comment', 'コメント'),
+)
 
 
 class UserManager(BaseUserManager):
@@ -95,6 +104,19 @@ class Profile(models.Model):
         return self.profile_name
 
 
+# フォローの中間テーブル
+class Follow(models.Model):
+    # フォローした人
+    following_user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                       related_name='following_user',
+                                       on_delete=models.CASCADE)
+    # フォローされた人
+    followed_user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                      related_name='followed_user',
+                                      on_delete=models.CASCADE)
+    is_following = models.BooleanField(default=False)
+
+
 # アイデアのトピック
 class Topic(models.Model):
     name = models.CharField(max_length=10,
@@ -108,15 +130,18 @@ class Idea(models.Model):
     idea_creator = models.ForeignKey(settings.AUTH_USER_MODEL,
                                      related_name='idea_creator',
                                      on_delete=models.CASCADE)
-    # topics = models.ManyToManyField()
+    # 関連するトピック
+    topics = models.ManyToManyField(
+        Topic,
+        related_name='topics',
+        blank=True,
+        default=[],
+    )
     title = models.CharField(max_length=30)
     content = models.TextField(max_length=3000)
     is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    # アイデアにいいねしたユーザー
-    likes = models.ManyToManyField(settings.AUTH_USER_MODEL,
-                                   related_name='likes',
-                                   blank=True)
+    # likes = fields.GenericRelation(Like)
 
 
 # タイトルだけのメモ
@@ -129,28 +154,59 @@ class Memo(models.Model):
     is_published = models.BooleanField(default=False)
 
 
-# アイデアに良いねしたときの中間テーブル
-class IdeaLike(models.Model):
-    like_user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                                  related_name='like_user',
-                                  on_delete=models.CASCADE)
-    target_idea = models.ForeignKey(Idea,
-                                    related_name='target_post',
-                                    on_delete=models.CASCADE)
-
-
-# TODO: アイデアやメモ、コメントのためのコメント
+# コメント
 class Comment(models.Model):
     commentor = models.ForeignKey(settings.AUTH_USER_MODEL,
                                   related_name='commentor',
                                   on_delete=models.CASCADE)
+    # target_type = models.Choices(choices=POST_CHOISES, required=True)
+    # 対象のコメントのモデルタイプ
+    comment_target_type = models.CharField(null=False,
+                                           blank=False,
+                                           choices=POST_CHOISES)
     content = models.TextField(max_length=1000)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
-# 通知
+# 投稿に良いねしたときの中間テーブル
+class Like(models.Model):
+    liked_user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                   related_name='liked_user',
+                                   on_delete=models.CASCADE)
+    # 対象の投稿
+    # like_target_type = models.ForeignKey(Idea,
+    #                                      related_name='like_target_type',
+    #                                      on_delete=models.CASCADE)
+    like_target_type = models.ForeignKey(ContentType,
+                                         related_name='like_target_type',
+                                         on_delete=models.CASCADE)
+    target_id = models.PositiveIntegerField()
+    target_object = fields.GenericForeignKey('like_target_type', 'target_id')
+    # post_type = models.Choices(
+    #     choices=POST_CHOISES,
+    #     required=True,
+    # )
+
+    is_liked = models.BooleanField(default=False)
+
+
+# ユーザーからユーザーへの通知
 class Notification(models.Model):
+    # 通知を作成した人
     notificator = models.ForeignKey(settings.AUTH_USER_MODEL,
                                     related_name='notificator',
                                     on_delete=models.CASCADE)
+    # 通知を受けた人
+    notification_reciever = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='notification_reciever',
+        on_delete=models.CASCADE)
+    # 通知が確認済みか
+    is_checked = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+# 全体へのお知らせ
+class Announce(models.Model):
+    title = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
