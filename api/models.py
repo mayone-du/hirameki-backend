@@ -33,10 +33,12 @@ class UserManager(BaseUserManager):
             email = kwargs.get('email')
             username = kwargs.get('username')
             password = kwargs.get('password')
+            print(kwargs)
             if not email:
                 raise ValueError('email is must')
-            user = self.model(email=self.normalize_email(email),
-                              username=username)
+            user = self.model(email=self.normalize_email(email))
+            if not username:
+                user.username = ''
             user.set_password(password)
             user.save(using=self._db)
             # ユーザー作成時にメールを送信 superuser作成時はコメントアウト
@@ -47,10 +49,10 @@ class UserManager(BaseUserManager):
                       fail_silently=False)
             return user
         except:
-            raise ValueError('create_user_error')
+            raise
 
     def create_superuser(self, email, password):
-        user = self.create_user(email, password)
+        user = self.create_user(**{'email': email, 'password': password})
         user.is_staff = True
         user.is_superuser = True
         user.save(using=self._db)
@@ -59,7 +61,10 @@ class UserManager(BaseUserManager):
 
 # ユーザー
 class User(AbstractBaseUser, PermissionsMixin):
-    username = models.CharField(max_length=100)
+    username = models.CharField(max_length=100,
+                                null=False,
+                                blank=False,
+                                default="")
     email = models.EmailField(max_length=50, unique=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
