@@ -186,9 +186,9 @@ class Comment(models.Model):
     commentor = models.ForeignKey(settings.AUTH_USER_MODEL,
                                   related_name='commentor',
                                   on_delete=models.CASCADE)
-    target_thred = models.ForeignKey(Thred,
-                                     related_name='target_thred',
-                                     on_delete=models.CASCADE)
+    target_thread = models.ForeignKey(Thred,
+                                      related_name='target_thread',
+                                      on_delete=models.CASCADE)
     content = models.TextField(max_length=300)
     # 変更されたかのフラグ
     is_modified = models.BooleanField(default=False)

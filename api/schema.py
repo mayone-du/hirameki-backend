@@ -51,7 +51,7 @@ class IdeaNode(DjangoObjectType):
     class Meta:
         model = Idea
         filter_fields = {
-            'idea_creator': ['exact', 'icontains'],
+            'idea_creator': ['exact'],
             'title': ['exact', 'icontains'],
             'content': ['exact', 'icontains'],
             'is_published': ['exact'],
@@ -63,7 +63,7 @@ class MemoNode(DjangoObjectType):
     class Meta:
         model = Memo
         filter_fields = {
-            'memo_creator': ['exact', 'icontains'],
+            'memo_creator': ['exact'],
             'title': ['exact', 'icontains'],
             'is_published': ['exact'],
         }
@@ -83,7 +83,7 @@ class CommentNode(DjangoObjectType):
     class Meta:
         model = Comment
         filter_fields = {
-            'commentor': ['exact', 'icontains'],
+            'commentor': ['exact'],
             'target_thread': ['exact'],
         }
         interfaces = (relay.Node, )
