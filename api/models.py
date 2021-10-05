@@ -12,10 +12,15 @@ def upload_profile_path(instance, filename):
          str(instance.related_user.id) + str(".") + str(ext)])
 
 
-POST_CHOISES = (
+LIKE_CHOICES = (
     ('Idea', 'アイデア'),
     ('Memo', 'メモ'),
     ('Comment', 'コメント'),
+)
+
+COMMENT_CHOICES = (
+    ('Idea', 'アイデア'),
+    ('Memo', 'メモ'),
 )
 
 
@@ -153,31 +158,39 @@ class Memo(models.Model):
     is_published = models.BooleanField(default=False)
 
 
-# コメント
-class Comment(models.Model):
-    commentor = models.ForeignKey(settings.AUTH_USER_MODEL,
-                                  related_name='commentor',
-                                  on_delete=models.CASCADE)
+# 対象の投稿ごとにスレッドを作れる
+class Thred(models.Model):
     # 対象のコメントのモデルタイプ
     comment_target_type = models.CharField(null=False,
                                            blank=False,
                                            max_length=50,
-                                           choices=POST_CHOISES)
-    comment_idea = models.ForeignKey(Idea,
-                                     null=True,
-                                     related_name='comment_idea',
-                                     on_delete=models.CASCADE)
-    comment_memo = models.ForeignKey(Memo,
-                                     null=True,
-                                     related_name='comment_memo',
-                                     on_delete=models.CASCADE)
+                                           choices=COMMENT_CHOICES)
+    # 投稿タイプによって外部参照キーを変更
+    target_idea = models.ForeignKey(Idea,
+                                    null=True,
+                                    related_name='target_idea',
+                                    on_delete=models.CASCADE)
+    target_memo = models.ForeignKey(Memo,
+                                    null=True,
+                                    related_name='target_memo',
+                                    on_delete=models.CASCADE)
 
-    content = models.TextField(max_length=1000)
+
+# スレッドに付随するコメント
+class Comment(models.Model):
+    commentor = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                  related_name='commentor',
+                                  on_delete=models.CASCADE)
+    target_thred = models.ForeignKey(Thred,
+                                     related_name='target_thred',
+                                     on_delete=models.CASCADE)
+    content = models.TextField(max_length=300)
     # 変更されたかのフラグ
     is_modified = models.BooleanField(default=False)
     # 公開されているか(デフォルトでは普通に公開されている)
     is_published = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 # 投稿に良いねしたときの中間テーブル
@@ -186,10 +199,10 @@ class Like(models.Model):
                                    related_name='liked_user',
                                    on_delete=models.CASCADE)
     # いいねの対象の投稿タイプ
-    target_type = models.CharField(max_length=50,
-                                   choices=POST_CHOISES,
-                                   null=False,
-                                   blank=False)
+    like_target_type = models.CharField(max_length=50,
+                                        choices=LIKE_CHOICES,
+                                        null=False,
+                                        blank=False)
     # 投稿タイプによって外部参照キーを変更
     liked_idea = models.ForeignKey(Idea,
                                    null=True,
@@ -226,4 +239,5 @@ class Notification(models.Model):
 # 全体へのお知らせ
 class Announce(models.Model):
     title = models.CharField(max_length=100)
+    content = models.CharField(max_length=1000)
     created_at = models.DateTimeField(auto_now_add=True)
