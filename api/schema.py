@@ -38,6 +38,17 @@ class ProfileNode(DjangoObjectType):
         interfaces = (relay.Node, )
 
 
+class FollowNode(DjangoObjectType):
+    class Meta:
+        model = Follow
+        filter_fields = {
+            'following_user': ['exact'],
+            'followed_user': ['exact'],
+            'is_following': ['exact'],
+        }
+        interfaces = (relay.Node, )
+
+
 class TopicNode(DjangoObjectType):
     class Meta:
         model = Topic
@@ -72,7 +83,7 @@ class MemoNode(DjangoObjectType):
 
 class ThreadNode(DjangoObjectType):
     class Meta:
-        model = Thred
+        model = Thread
         filter_fields = {
             'thread_target_type': ['exact', 'icontains'],
         }
@@ -121,6 +132,7 @@ class AnnounceNode(DjangoObjectType):
         interfaces = (relay.Node, )
 
 
+# プロフィール
 class UpdateProfileMutation(relay.ClientIDMutation):
     class Input:
         profile_id = graphene.ID(required=True)
@@ -146,11 +158,23 @@ class UpdateProfileMutation(relay.ClientIDMutation):
             raise
 
 
+# フォロー
+class CreateFollowMutation(relay.ClientIDMutation):
+    class Input:
+        followed_user_id = graphene.ID(required=True)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+
+        return CreateFollowMutation()
+
+
 # アイデア
 class CreateIdeaMutation(relay.ClientIDMutation):
     class Input:
         title = graphene.String(required=True)
         content = graphene.String(required=True)
+        topic_ids = graphene.List(graphene.ID)
 
     idea = graphene.Field(IdeaNode)
 
@@ -161,7 +185,11 @@ class CreateIdeaMutation(relay.ClientIDMutation):
 
             title = input.get('title')
             content = input.get('content')
+            topic_ids = input.get('topic_ids')
             idea = Idea(idea_creator=user, title=title, content=content)
+            # TODO
+            # for topic_id in topic_ids:
+            #     pass
             return CreateIdeaMutation(idea=idea)
         except:
             raise
@@ -310,76 +338,59 @@ class CreateCommentMutation(relay.ClientIDMutation):
             raise
 
 
-# # タスクの作成
-# class CreateTaskMutation(relay.ClientIDMutation):
-#     class Input:
-#         title = graphene.String(required=True)
-#         content = graphene.String(required=False)
-#         task_image = Upload(required=False)
+class UpdateCommentMutation(relay.ClientIDMutation):
+    class Input:
+        comment_id = graphene.ID(required=True)
+        content = graphene.String(required=True)
 
-#     task = graphene.Field(TaskNode)
+    comment = graphene.Field(CommentNode)
 
-#     @validate_token
-#     def mutate_and_get_payload(root, info, **input):
-#         try:
-#             current_user = get_user_model().objects.get(email=input.get('login_user_email'))
-#             task = Task(
-#                 create_user=current_user.id,
-#                 title=input.get('title'),
-#             )
-#             if input.get('content') is not None:
-#                 task.content = input.get('content')
-#             return CreateTaskMutation(task=task)
-#         except:
-#             raise ValueError('create task error')
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            comment_id = input.get('comment_id')
+            content = input.get('content')
+            comment: Comment = Comment.objects.get(
+                id=from_global_id(comment_id)[1])
 
-# # タスクの更新
-# class UpdateTaskMutation(relay.ClientIDMutation):
-#     class Input:
-#         id = graphene.ID(required=True)
-#         title = graphene.String(required=True)
+            comment.content = content
+            comment.is_modified = True
+            comment.save()
+            return UpdateCommentMutation(comment=comment)
+        except:
+            raise
 
-#     task = graphene.Field(TaskNode)
 
-#     @validate_token
-#     def mutate_and_get_payload(root, info, **input):
-#         id = input.get('id')
-#         title = input.get('title')
-#         content = input.get('content')
-#         is_done = input.get('is_done')
+class DeleteCommentMutation(relay.ClientIDMutation):
+    class Input:
+        comment_id = graphene.ID(required=True)
 
-#         task = Task.objects.get(id=from_global_id(id)[1])
+    comment = graphene.Field(CommentNode)
 
-#         if title is not None:
-#             task.title = title
-#         if content is not None:
-#             task.content =content
-#         if is_done is not None:
-#             task.is_done =is_done
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            comment_id = input.get('comment_id')
+            comment: Comment = Comment.objects.get(
+                id=from_global_id(comment_id)[1])
+            comment.delete()
+            return DeleteCommentMutation(comment=comment)
+        except:
+            raise
 
-#         task.save()
-#         return UpdateTaskMutation(task=task)
 
-# # タスクの削除
-# class DeleteTaskMutation(relay.ClientIDMutation):
-#     class Input:
-#         id = graphene.ID(required=True)
+# いいね
 
-#     task = graphene.Field(TaskNode)
-
-#     @validate_token
-#     def mutate_and_get_payload(root, info, **input):
-#         task = Task.objects.get(id=from_global_id(id)[1])
-#         task.delete()
-#         return DeleteTaskMutation(task=task)
+# 通知
 
 
 class Mutation(graphene.ObjectType):
     social_auth = graphql_social_auth.SocialAuth.Field()
 
-    # create_task = CreateTaskMutation.Field()
-    # update_task = UpdateTaskMutation.Field()
-    # delete_task = DeleteTaskMutation.Field()
+    # idea
+    create_idea = CreateIdeaMutation.Field()
+    update_idea = UpdateIdeaMutation.Field()
+    delete_idea = DeleteIdeaMutation.Field()
 
 
 class Query(graphene.ObjectType):
@@ -387,7 +398,7 @@ class Query(graphene.ObjectType):
     all_users = DjangoFilterConnectionField(UserNode)
     request_user = graphene.Field(UserNode)
 
-    # task = graphene.Field(TaskNode, id=graphene.NonNull(graphene.ID))
+    task = graphene.Field(IdeaNode, id=graphene.NonNull(graphene.ID))
 
     def resolve_user(self, info, **kwargs):
         id = kwargs.get('id')
@@ -402,10 +413,11 @@ class Query(graphene.ObjectType):
         email = info.context.user.email
         return get_user_model().objects.get(email=email)
 
-    # @validate_token
-    # def resolve_task(self, info, **kwargs):
-    #     id = kwargs.get('id')
-    #     return Task.objects.get(id=from_global_id(id)[1])
+    # idea
+    @validate_token
+    def resolve_idea(self, info, **kwargs):
+        id = kwargs.get('id')
+        return Idea.objects.get(id=from_global_id(id)[1])
 
 
 class Subscription(graphene.ObjectType):
