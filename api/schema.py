@@ -12,7 +12,7 @@ from graphql_relay import from_global_id
 from api.validation import validate_token
 
 from .models import (Announce, Comment, Follow, Idea, Like, Memo, Notification,
-                     Profile, Thred, Topic, User)
+                     Profile, Thread, Topic, User)
 
 
 # ユーザー
@@ -128,18 +128,186 @@ class UpdateProfileMutation(relay.ClientIDMutation):
 
     profile = graphene.Field(ProfileNode)
 
-    def mutate_and_get_payload(self, info, **input):
-        profile_id = input.get('profile_id')
-        profile_name = input.get('profile_name')
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            profile_id = input.get('profile_id')
+            profile_name = input.get('profile_name')
 
-        profile = Profile.objects.get(id=from_global_id(profile_id)[1])
+            profile: Profile = Profile.objects.get(
+                id=from_global_id(profile_id)[1])
 
-        if profile_name is not None:
-            profile.profile_name = profile_name
+            if profile_name is not None:
+                profile.profile_name = profile_name
 
-        profile.save()
+            profile.save()
 
-        return UpdateProfileMutation(profile=profile)
+            return UpdateProfileMutation(profile=profile)
+        except:
+            raise
+
+
+# アイデア
+class CreateIdeaMutation(relay.ClientIDMutation):
+    class Input:
+        title = graphene.String(required=True)
+        content = graphene.String(required=True)
+
+    idea = graphene.Field(IdeaNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            user = get_user_model().objects.get(email=info.context.user.email)
+
+            title = input.get('title')
+            content = input.get('content')
+            idea = Idea(idea_creator=user, title=title, content=content)
+            return CreateIdeaMutation(idea=idea)
+        except:
+            raise
+
+
+class UpdateIdeaMutation(relay.ClientIDMutation):
+    class Input:
+        idea_id = graphene.ID(required=True)
+        title = graphene.String(required=False)
+        content = graphene.String(required=False)
+
+    idea = graphene.Field(IdeaNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            idea_id = input.get('idea_id')
+            title = input.get('title')
+            content = input.get('content')
+            idea: Idea = Idea.objects.get(id=from_global_id(idea_id)[1])
+            if title is not None:
+                idea.title = title
+            if content is not None:
+                idea.content = content
+            idea.save()
+            return CreateIdeaMutation(idea=idea)
+        except:
+            raise
+
+
+class DeleteIdeaMutation(relay.ClientIDMutation):
+    class Input:
+        idea_id = graphene.ID(required=True)
+
+    idea = graphene.Field(IdeaNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            idea_id = input.get('idea_id')
+            idea: Idea = Idea.objects.get(id=from_global_id(idea_id)[1])
+            idea.delete()
+            return DeleteIdeaMutation(idea=idea)
+        except:
+            raise
+
+
+# メモ
+class CreateMemoMutation(relay.ClientIDMutation):
+    class Input:
+        title = graphene.String(required=True)
+
+    memo = graphene.Field(MemoNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            title = input.get('title')
+            memo = Memo(title=title)
+            memo.save()
+            return
+        except:
+            raise
+
+
+class UpdateMemoMutation(relay.ClientIDMutation):
+    class Input:
+        memo_id = graphene.ID(required=True)
+        title = graphene.String(required=False)
+
+    memo = graphene.Field(MemoNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            memo_id = input.get('memo_id')
+            title = input.get('title')
+            memo: Memo = Memo.objects.get(id=from_global_id(memo_id)[1])
+            if title is not None:
+                memo.title = title
+            memo.save()
+            return UpdateMemoMutation(memo=memo)
+        except:
+            raise
+
+
+# スレッド
+class CreateThreadMutation(relay.ClientIDMutation):
+    class Input:
+        thread_target_type = graphene.String(required=True)
+        target_idea_id = graphene.ID(required=False)
+        target_memo_id = graphene.ID(required=False)
+
+    thread = graphene.Field(ThreadNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            thread_target_type = input.get('thread_target_type')
+            target_idea_id = input.get('target_idea_id')
+            target_memo_id = input.get('target_memo_id')
+
+            if target_idea_id and target_memo_id is None:
+                raise ValueError('Either id is required')
+
+            thread = Thread(thread_target_type=thread_target_type)
+
+            if target_idea_id is not None:
+                idea: Idea = Idea.objects.get(
+                    id=from_global_id(target_idea_id)[1])
+                thread.target_idea = idea
+
+            if target_memo_id is not None:
+                memo: Memo = Memo.objects.get(
+                    id=from_global_id(target_memo_id)[1])
+                thread.target_memo = memo
+
+            return CreateThreadMutation(thread=thread)
+        except:
+            raise
+
+
+# コメント
+class CreateCommentMutation(relay.ClientIDMutation):
+    class Input:
+        target_thread_id = graphene.ID(required=True)
+        content = graphene.String(required=True)
+
+    comment = graphene.Field(CommentNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            target_thread_id = input.get('target_thread_id')
+            content = input.get('content')
+
+            user: User = User.objects.get(email=info.context.user.email)
+            thread: Thread = Thread.objects.get(
+                id=from_global_id(target_thread_id)[1])
+
+            comment = Comment(commentor=user,
+                              target_thread=thread,
+                              content=content)
+            return CreateCommentMutation(comment=comment)
+        except:
+            raise
 
 
 # # タスクの作成

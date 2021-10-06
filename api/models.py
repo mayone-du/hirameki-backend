@@ -164,7 +164,7 @@ class Memo(models.Model):
 
 
 # 対象の投稿ごとにスレッドを作れる
-class Thred(models.Model):
+class Thread(models.Model):
     # 対象の投稿のモデルタイプ
     thread_target_type = models.CharField(null=False,
                                           blank=False,
@@ -186,7 +186,7 @@ class Comment(models.Model):
     commentor = models.ForeignKey(settings.AUTH_USER_MODEL,
                                   related_name='commentor',
                                   on_delete=models.CASCADE)
-    target_thread = models.ForeignKey(Thred,
+    target_thread = models.ForeignKey(Thread,
                                       related_name='target_thread',
                                       on_delete=models.CASCADE)
     content = models.TextField(max_length=300)
