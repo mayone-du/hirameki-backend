@@ -503,6 +503,9 @@ class UpdateLikeMutation(relay.ClientIDMutation):
 
 
 # 通知
+class CreateNotificationMutation(relay.ClientIDMutation):
+    class Input:
+        notification_reciever_id = graphene.ID(required=True)
 
 
 class Mutation(graphene.ObjectType):
@@ -520,6 +523,17 @@ class Mutation(graphene.ObjectType):
     create_memo = CreateMemoMutation.Field()
     update_memo = UpdateMemoMutation.Field()
     delete_memo = DeleteMemoMutation.Field()
+
+    # thread
+    create_thread = CreateThreadMutation.Field()
+
+    # comment
+    create_comment = CreateCommentMutation.Field()
+    update_comment = UpdateCommentMutation.Field()
+
+    # like
+    create_like = CreateLikeMutation.Field()
+    update_like = UpdateLikeMutation.Field()
 
 
 class Query(graphene.ObjectType):

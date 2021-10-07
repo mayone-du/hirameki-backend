@@ -23,6 +23,22 @@ THREAD_CHOICES = (
     ('Memo', 'メモ'),
 )
 
+# 通知の種類
+NOTIFICATION_CHOICES = (
+    ('Comment', 'コメント'),
+    ('Follow', 'フォロー'),
+    ('Like', 'いいね'),
+    ('Announce', 'お知らせ'),
+)
+# 通知を受けたアイテムの種類
+NOTIFIED_ITEM_CHOICES = (
+    ('Idea', 'アイデア'),
+    ('Memo', 'メモ'),
+    ('Comment', 'コメント'),
+    ('FollowedUser', 'フォローされたユーザー'),
+    ('Announce', 'お知らせ'),
+)
+
 
 class UserManager(BaseUserManager):
     def create_user(
@@ -236,6 +252,18 @@ class Notification(models.Model):
         settings.AUTH_USER_MODEL,
         related_name='notification_reciever',
         on_delete=models.CASCADE)
+    # 通知の種類
+    notification_type = models.CharField(choices=NOTIFICATION_CHOICES,
+                                         max_length=50,
+                                         null=False,
+                                         blank=False)
+    # 通知を受けたアイテムの種類
+    notified_item_type = models.CharField(choices=NOTIFIED_ITEM_CHOICES,
+                                          max_length=50,
+                                          null=False,
+                                          blank=False)
+    # 通知を受けたアイテムのID（遷移するために必要）
+    notified_item_id = models.PositiveBigIntegerField()
     # 通知が確認済みか
     is_checked = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
