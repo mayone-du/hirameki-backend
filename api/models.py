@@ -124,7 +124,7 @@ class Follow(models.Model):
                                       related_name='followed_user',
                                       on_delete=models.CASCADE)
     # フォローしているかの判定フラグ
-    is_following = models.BooleanField(default=False)
+    is_following = models.BooleanField(default=True)
 
 
 # アイデアのトピック

@@ -163,10 +163,42 @@ class CreateFollowMutation(relay.ClientIDMutation):
     class Input:
         followed_user_id = graphene.ID(required=True)
 
+    follow = graphene.Field(FollowNode)
+
     @validate_token
     def mutate_and_get_payload(root, info, **input):
+        try:
+            followed_user_id = input.get('followed_user_id')
+            following_user = get_user_model().objects.get(
+                email=info.context.user.email)
+            followed_user = get_user_model().objects.get(
+                id=from_global_id(followed_user_id)[1])
+            follow = Follow(following_user=following_user,
+                            followed_user=followed_user)
+            follow.save()
+            return CreateFollowMutation(follow=follow)
+        except:
+            raise
 
-        return CreateFollowMutation()
+
+class UpdateFollowMutation(relay.ClientIDMutation):
+    class Input:
+        follow_id = graphene.ID(required=True)
+        is_following = graphene.Boolean(required=True)
+
+    follow = graphene.Field(FollowNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            follow_id = input.get('follow_id')
+            is_following = input.get('is_following')
+            follow: Follow = Follow.objects.get(id=from_global_id(follow_id)[1])
+            follow.is_following = is_following
+            follow.save()
+            return UpdateFollowMutation(follow=follow)
+        except:
+            raise
 
 
 # アイデア
@@ -190,6 +222,7 @@ class CreateIdeaMutation(relay.ClientIDMutation):
             # TODO
             # for topic_id in topic_ids:
             #     pass
+            idea.save()
             return CreateIdeaMutation(idea=idea)
         except:
             raise
@@ -307,6 +340,7 @@ class CreateThreadMutation(relay.ClientIDMutation):
                     id=from_global_id(target_memo_id)[1])
                 thread.target_memo = memo
 
+            thread.save()
             return CreateThreadMutation(thread=thread)
         except:
             raise
@@ -333,6 +367,7 @@ class CreateCommentMutation(relay.ClientIDMutation):
             comment = Comment(commentor=user,
                               target_thread=thread,
                               content=content)
+            comment.save()
             return CreateCommentMutation(comment=comment)
         except:
             raise
