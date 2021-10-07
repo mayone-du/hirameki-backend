@@ -503,9 +503,9 @@ class UpdateLikeMutation(relay.ClientIDMutation):
 
 
 # 通知
-class CreateNotificationMutation(relay.ClientIDMutation):
-    class Input:
-        notification_reciever_id = graphene.ID(required=True)
+# class CreateNotificationMutation(relay.ClientIDMutation):
+#     class Input:
+#         notification_reciever_id = graphene.ID(required=True)
 
 
 class Mutation(graphene.ObjectType):

@@ -39,6 +39,9 @@ NOTIFIED_ITEM_CHOICES = (
     ('Announce', 'お知らせ'),
 )
 
+# 通報の種類
+REPORT_CHOICES = (('', ''))
+
 
 class UserManager(BaseUserManager):
     def create_user(
@@ -273,4 +276,15 @@ class Notification(models.Model):
 class Announce(models.Model):
     title = models.CharField(max_length=100)
     content = models.CharField(max_length=1000)
+    # 重要なお知らせかどうか
+    is_important = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+# ユーザーからの通報
+class Report(models.Model):
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                 related_name='reporter',
+                                 on_delete=models.CASCADE)
+    title = models.CharField(max_length=50, null=False, blank=False)
+    content = models.CharField(max_length=1000, null=False, blank=False)
