@@ -3,6 +3,7 @@ import asyncio
 import graphene
 import graphql_social_auth
 from django.contrib.auth import get_user_model
+from django.db import models
 from graphene import relay
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.types import DjangoObjectType
@@ -11,8 +12,9 @@ from graphql_relay import from_global_id
 
 from api.validation import validate_token
 
-from .models import (Announce, Comment, Follow, Idea, Like, Memo, Notification,
-                     Profile, Thread, Topic, User)
+from .models import (LIKE_CHOICES, THREAD_CHOICES, Announce, Comment, Follow,
+                     Idea, Like, Memo, Notification, Profile, Thread, Topic,
+                     User)
 
 
 # ユーザー
@@ -193,7 +195,8 @@ class UpdateFollowMutation(relay.ClientIDMutation):
         try:
             follow_id = input.get('follow_id')
             is_following = input.get('is_following')
-            follow: Follow = Follow.objects.get(id=from_global_id(follow_id)[1])
+            follow: Follow = Follow.objects.get(
+                id=from_global_id(follow_id)[1])
             follow.is_following = is_following
             follow.save()
             return UpdateFollowMutation(follow=follow)
@@ -309,6 +312,23 @@ class UpdateMemoMutation(relay.ClientIDMutation):
             raise
 
 
+class DeleteMemoMutation(relay.ClientIDMutation):
+    class Input:
+        memo_id = graphene.ID(required=True)
+
+    memo = graphene.Field(MemoNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            memo_id = input.get('memo_id')
+            memo: Memo = Memo.objects.get(id=from_global_id(memo_id)[1])
+            memo.delete()
+            return DeleteMemoMutation(memo=memo)
+        except:
+            raise
+
+
 # スレッド
 class CreateThreadMutation(relay.ClientIDMutation):
     class Input:
@@ -322,10 +342,14 @@ class CreateThreadMutation(relay.ClientIDMutation):
     def mutate_and_get_payload(root, info, **input):
         try:
             thread_target_type = input.get('thread_target_type')
+            # thread_target_typeは指定された値のみに限定する
+            if not thread_target_type in THREAD_CHOICES:
+                raise ValueError('thread_target_type error')
+
+            # どちらか片方は必須にする
             target_idea_id = input.get('target_idea_id')
             target_memo_id = input.get('target_memo_id')
-
-            if target_idea_id and target_memo_id is None:
+            if (target_idea_id and target_memo_id) is None:
                 raise ValueError('Either id is required')
 
             thread = Thread(thread_target_type=thread_target_type)
@@ -415,6 +439,68 @@ class DeleteCommentMutation(relay.ClientIDMutation):
 
 
 # いいね
+class CreateLikeMutation(relay.ClientIDMutation):
+    class Input:
+        like_target_type = graphene.String(required=True)
+        liked_idea_id = graphene.ID(required=False)
+        liked_memo_id = graphene.ID(required=False)
+        liked_comment_id = graphene.ID(required=False)
+
+    like = graphene.Field(LikeNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            like_target_type = input.get('like_target_type')
+            if not like_target_type in LIKE_CHOICES:
+                raise ValueError('like_target_type error')
+
+            liked_idea_id = input.get('liked_idea_id')
+            liked_memo_id = input.get('liked_memo_id')
+            liked_comment_id = input.get('liked_comment_id')
+            if (liked_idea_id and liked_memo_id and liked_comment_id) is None:
+                raise ValueError('Either id is required')
+
+            user = get_user_model().objects.get(email=info.context.user.email)
+            like = Like(liked_user=user, like_target_type=like_target_type)
+
+            if liked_idea_id is not None:
+                idea = Idea.objects.get(id=from_global_id(liked_idea_id)[1])
+                like.liked_idea = idea
+            if liked_memo_id is not None:
+                memo = Memo.objects.get(id=from_global_id(liked_memo_id)[1])
+                like.liked_memo = memo
+            if liked_comment_id is not None:
+                comment = Comment.objects.get(
+                    id=from_global_id(liked_comment_id)[1])
+                like.liked_comment = comment
+
+            like.save()
+            return CreateLikeMutation(like=like)
+        except:
+            raise
+
+
+class UpdateLikeMutation(relay.ClientIDMutation):
+    class Input:
+        like_id = graphene.ID(required=True)
+        is_liked = graphene.Boolean(required=True)
+
+    like = graphene.Field(LikeNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            like_id = input.get('like_id')
+            is_liked = input.get('is_liked')
+
+            like: Like = Like.objects.get(id=from_global_id(like_id)[1])
+            like.is_liked = is_liked
+            like.save()
+            return UpdateLikeMutation(like=like)
+        except:
+            raise
+
 
 # 通知
 
@@ -422,10 +508,18 @@ class DeleteCommentMutation(relay.ClientIDMutation):
 class Mutation(graphene.ObjectType):
     social_auth = graphql_social_auth.SocialAuth.Field()
 
+    # profile
+    update_profile = UpdateProfileMutation.Field()
+
     # idea
     create_idea = CreateIdeaMutation.Field()
     update_idea = UpdateIdeaMutation.Field()
     delete_idea = DeleteIdeaMutation.Field()
+
+    # memo
+    create_memo = CreateMemoMutation.Field()
+    update_memo = UpdateMemoMutation.Field()
+    delete_memo = DeleteMemoMutation.Field()
 
 
 class Query(graphene.ObjectType):
