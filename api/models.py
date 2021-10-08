@@ -55,15 +55,16 @@ class UserManager(BaseUserManager):
             print(kwargs)
             if not email:
                 raise ValueError('email is must')
-            user = self.model(email=self.normalize_email(email))
+            user: User = self.model(email=self.normalize_email(email))
             if not username:
                 user.username = ''
             user.set_password(password)
-            user.save(using=self._db)
 
             # ユーザー作成と同時にプロフィールも作成
             profile = Profile(related_user=user, profile_name=user.username)
-            print(kwargs)
+
+            user.save(using=self._db)
+            profile.save()
 
             # ユーザー作成時にメールを送信 superuser作成時はコメントアウト
             send_mail(subject='サンプルアプリ | 本登録のお知らせ',
@@ -112,7 +113,7 @@ class Profile(models.Model):
     # 表示名
     profile_name = models.CharField(max_length=20)
     # もとのGoogleアカウントのデフォルトの画像URL
-    google_image_url = models.URLField()
+    google_image_url = models.URLField(null=True, blank=True)
     # プロフィール画像
     profile_image = models.ImageField(blank=True,
                                       null=True,

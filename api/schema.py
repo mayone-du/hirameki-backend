@@ -167,12 +167,17 @@ class UpdateProfileMutation(relay.ClientIDMutation):
         try:
             profile_id = input.get('profile_id')
             profile_name = input.get('profile_name')
+            google_image_url = input.get('google_image_url')
+            self_introduction = input.get('self_introduction')
 
             profile: Profile = Profile.objects.get(
                 id=from_global_id(profile_id)[1])
+            print(profile)
 
             if profile_name is not None:
                 profile.profile_name = profile_name
+            if google_image_url is not None:
+                profile.google_image_url = google_image_url
 
             profile.save()
 
