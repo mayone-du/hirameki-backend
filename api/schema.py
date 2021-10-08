@@ -13,8 +13,8 @@ from graphql_relay import from_global_id
 from api.validation import validate_token
 
 from .models import (LIKE_CHOICES, THREAD_CHOICES, Announce, Comment, Follow,
-                     Idea, Like, Memo, Notification, Profile, Thread, Topic,
-                     User)
+                     Idea, Like, Memo, Notification, Profile, Report, Thread,
+                     Topic, User)
 
 
 # ユーザー
@@ -127,6 +127,16 @@ class NotificationNode(DjangoObjectType):
 class AnnounceNode(DjangoObjectType):
     class Meta:
         model = Announce
+        filter_fields = {
+            'title': ['exact', 'icontains'],
+            'content': ['exact', 'icontains'],
+        }
+        interfaces = (relay.Node, )
+
+
+class ReportNode(DjangoObjectType):
+    class Meta:
+        model = Report
         filter_fields = {
             'title': ['exact', 'icontains'],
             'content': ['exact', 'icontains'],
@@ -503,9 +513,80 @@ class UpdateLikeMutation(relay.ClientIDMutation):
 
 
 # 通知
-# class CreateNotificationMutation(relay.ClientIDMutation):
-#     class Input:
-#         notification_reciever_id = graphene.ID(required=True)
+class CreateNotificationMutation(relay.ClientIDMutation):
+    class Input:
+        notification_reciever_id = graphene.ID(required=True)
+        notification_type = graphene.String(required=True)
+        notified_item_type = graphene.String(required=True)
+        notified_item_id = graphene.Int(required=True)
+
+    notification = graphene.Field(NotificationNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            notificator = get_user_model().objects.get(
+                email=info.context.user.email)
+
+            notification_reciever_id = input.get('notification_reciever_id')
+            notification_reciever = get_user_model().objects.get(
+                id=from_global_id(notification_reciever_id)[1])
+
+            notification_type = input.get('notification_type')
+            notified_item_type = input.get('notified_item_type')
+            notified_item_id = input.get('notified_item_id')
+
+            notification = Notification(
+                notificator=notificator,
+                notification_reciever=notification_reciever,
+                notification_type=notification_type,
+                notified_item_type=notified_item_type,
+                notified_item_id=from_global_id(notified_item_id)[1])
+            notification.save()
+            return CreateNotificationMutation(notification=notification)
+        except:
+            raise
+
+
+class UpdateNotificationMutation(relay.ClientIDMutation):
+    class Input:
+        notification_id = graphene.ID(required=True)
+        is_checked = graphene.Boolean(required=True)
+
+    notification = graphene.Field(NotificationNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            notification_id = input.get('notification_id')
+            is_checked = input.get('is_checked')
+
+            notification: Notification = Notification(
+                id=from_global_id(notification_id)[1])
+            notification.is_checked = is_checked
+            notification.save()
+            return UpdateNotificationMutation(notification=notification)
+        except:
+            raise
+
+
+class CreateReportMutation(relay.ClientIDMutation):
+    class Input:
+        title = graphene.String(required=True)
+        content = graphene.String(required=True)
+
+    report = graphene.Field(ReportNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            title = input.get('title')
+            content = input.get('content')
+            user = get_user_model().objects.get(email=info.context.user.email)
+            report = Report(reporter=user, title=title, content=content)
+            return CreateReportMutation(report=report)
+        except:
+            raise
 
 
 class Mutation(graphene.ObjectType):
@@ -513,6 +594,10 @@ class Mutation(graphene.ObjectType):
 
     # profile
     update_profile = UpdateProfileMutation.Field()
+
+    # follow
+    create_follow = CreateFollowMutation.Field()
+    udpate_follow = UpdateFollowMutation.Field()
 
     # idea
     create_idea = CreateIdeaMutation.Field()
@@ -530,10 +615,18 @@ class Mutation(graphene.ObjectType):
     # comment
     create_comment = CreateCommentMutation.Field()
     update_comment = UpdateCommentMutation.Field()
+    delete_comment = DeleteCommentMutation.Field()
 
     # like
     create_like = CreateLikeMutation.Field()
     update_like = UpdateLikeMutation.Field()
+
+    # notification
+    create_notification = CreateNotificationMutation.Field()
+    update_notification = UpdateNotificationMutation.Field()
+
+    # report
+    create_report = CreateReportMutation.Field()
 
 
 class Query(graphene.ObjectType):
