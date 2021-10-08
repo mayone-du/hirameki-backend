@@ -119,6 +119,7 @@ class NotificationNode(DjangoObjectType):
         filter_fields = {
             'notificator': ['exact'],
             'notification_reciever': ['exact'],
+            'notification_type': ['exact'],
             'is_checked': ['exact'],
         }
         interfaces = (relay.Node, )
@@ -130,6 +131,7 @@ class AnnounceNode(DjangoObjectType):
         filter_fields = {
             'title': ['exact', 'icontains'],
             'content': ['exact', 'icontains'],
+            'is_important': ['exact'],
         }
         interfaces = (relay.Node, )
 
@@ -634,8 +636,6 @@ class Query(graphene.ObjectType):
     all_users = DjangoFilterConnectionField(UserNode)
     request_user = graphene.Field(UserNode)
 
-    task = graphene.Field(IdeaNode, id=graphene.NonNull(graphene.ID))
-
     def resolve_user(self, info, **kwargs):
         id = kwargs.get('id')
         return get_user_model().objects.get(id=from_global_id(id)[1])
@@ -650,10 +650,13 @@ class Query(graphene.ObjectType):
         return get_user_model().objects.get(email=email)
 
     # idea
-    @validate_token
     def resolve_idea(self, info, **kwargs):
         id = kwargs.get('id')
         return Idea.objects.get(id=from_global_id(id)[1])
+
+    def resolve_all_publised_ideas(self, info, **kwargs):
+        ideas = Idea.objects.filter(is_published=True)
+        return ideas
 
 
 class Subscription(graphene.ObjectType):

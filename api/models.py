@@ -60,6 +60,11 @@ class UserManager(BaseUserManager):
                 user.username = ''
             user.set_password(password)
             user.save(using=self._db)
+
+            # ユーザー作成と同時にプロフィールも作成
+            profile = Profile(related_user=user, profile_name=user.username)
+            print(kwargs)
+
             # ユーザー作成時にメールを送信 superuser作成時はコメントアウト
             send_mail(subject='サンプルアプリ | 本登録のお知らせ',
                       message=f'ユーザー作成時にメール送信しています' + email,
@@ -288,3 +293,4 @@ class Report(models.Model):
                                  on_delete=models.CASCADE)
     title = models.CharField(max_length=50, null=False, blank=False)
     content = models.CharField(max_length=1000, null=False, blank=False)
+    created_at = models.DateTimeField(auto_now_add=True)
