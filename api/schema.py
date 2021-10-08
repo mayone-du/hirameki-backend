@@ -150,6 +150,31 @@ class ReportNode(DjangoObjectType):
 
 
 # プロフィール
+class CreateProfileMutation(relay.ClientIDMutation):
+    class Input:
+        related_user_id = graphene.ID(required=True)
+        profile_name = graphene.String(required=True)
+        google_image_url = graphene.String(required=True)
+
+    profile = graphene.Field(ProfileNode)
+
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            related_user_id = input.get('related_user_id')
+            profile_name = input.get('profile_name')
+            google_image_url = input.get('google_image_url')
+
+            user = get_user_model().objects.get(id=from_global_id(related_user_id)[1])
+
+            profile = Profile(related_user=user,
+                              profile_name=profile_name,
+                              google_image_url=google_image_url)
+            profile.save()
+            return CreateProfileMutation(profile=profile)
+        except:
+            raise
+
+
 class UpdateProfileMutation(relay.ClientIDMutation):
     class Input:
         profile_id = graphene.ID(required=True)
@@ -166,13 +191,14 @@ class UpdateProfileMutation(relay.ClientIDMutation):
     def mutate_and_get_payload(root, info, **input):
         try:
             profile_id = input.get('profile_id')
+            print(profile_id)
+            print(from_global_id(profile_id)[1])
             profile_name = input.get('profile_name')
             google_image_url = input.get('google_image_url')
             self_introduction = input.get('self_introduction')
 
             profile: Profile = Profile.objects.get(
                 id=from_global_id(profile_id)[1])
-            print(profile)
 
             if profile_name is not None:
                 profile.profile_name = profile_name
@@ -609,6 +635,7 @@ class Mutation(graphene.ObjectType):
     social_auth = graphql_social_auth.SocialAuth.Field()
 
     # profile
+    create_profile = CreateProfileMutation.Field()
     update_profile = UpdateProfileMutation.Field()
 
     # follow

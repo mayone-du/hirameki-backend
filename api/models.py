@@ -52,19 +52,14 @@ class UserManager(BaseUserManager):
             email = kwargs.get('email')
             username = kwargs.get('username')
             password = kwargs.get('password')
-            print(kwargs)
+
             if not email:
                 raise ValueError('email is must')
             user: User = self.model(email=self.normalize_email(email))
-            if not username:
-                user.username = ''
+            user.username = username
             user.set_password(password)
 
-            # ユーザー作成と同時にプロフィールも作成
-            profile = Profile(related_user=user, profile_name=user.username)
-
             user.save(using=self._db)
-            profile.save()
 
             # ユーザー作成時にメールを送信 superuser作成時はコメントアウト
             send_mail(subject='サンプルアプリ | 本登録のお知らせ',
