@@ -36,6 +36,9 @@ class ProfileNode(DjangoObjectType):
         filter_fields = {
             'profile_name': ['exact', 'icontains'],
             'self_introduction': ['exact', 'icontains'],
+            'github_username': ['exact', 'icontains'],
+            'twitter_username': ['exact', 'icontains'],
+            'website_url': ['exact', 'icontains'],
         }
         interfaces = (relay.Node, )
 
@@ -151,6 +154,12 @@ class UpdateProfileMutation(relay.ClientIDMutation):
     class Input:
         profile_id = graphene.ID(required=True)
         profile_name = graphene.String(required=False)
+        google_image_url = graphene.String(required=False)
+        profile_image = Upload(required=False)
+        self_introduction = graphene.String(required=False)
+        github_username = graphene.String(required=False)
+        twitter_username = graphene.String(required=False)
+        website_url = graphene.String(required=False)
 
     profile = graphene.Field(ProfileNode)
 
@@ -634,7 +643,7 @@ class Mutation(graphene.ObjectType):
 class Query(graphene.ObjectType):
     user = graphene.Field(UserNode, id=graphene.NonNull(graphene.ID))
     all_users = DjangoFilterConnectionField(UserNode)
-    request_user = graphene.Field(UserNode)
+    my_user_info = graphene.Field(UserNode)
 
     def resolve_user(self, info, **kwargs):
         id = kwargs.get('id')
@@ -644,8 +653,7 @@ class Query(graphene.ObjectType):
         return get_user_model().objects.all()
 
     @validate_token
-    def resolve_user(self, info):
-        # ↓デコレーターで追加されたemailにアクセス
+    def resolve_my_user_info(self, info):
         email = info.context.user.email
         return get_user_model().objects.get(email=email)
 
