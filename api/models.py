@@ -172,6 +172,9 @@ class Idea(models.Model):
     is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self) -> str:
+        return self.title
+
 
 # タイトルだけのメモ
 class Memo(models.Model):
@@ -181,6 +184,9 @@ class Memo(models.Model):
     title = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
     is_published = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return self.title
 
 
 # 対象の投稿ごとにスレッドを作れる
@@ -216,6 +222,9 @@ class Comment(models.Model):
     is_published = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return self.content
 
 
 # 投稿に良いねしたときの中間テーブル
@@ -272,6 +281,9 @@ class Notification(models.Model):
     is_checked = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self) -> str:
+        return self.notification_type
+
 
 # 全体へのお知らせ
 class Announce(models.Model):
@@ -280,6 +292,9 @@ class Announce(models.Model):
     # 重要なお知らせかどうか
     is_important = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return self.title
 
 
 # ユーザーからの通報
@@ -290,3 +305,6 @@ class Report(models.Model):
     title = models.CharField(max_length=50, null=False, blank=False)
     content = models.CharField(max_length=1000, null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return self.title

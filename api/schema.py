@@ -164,7 +164,8 @@ class CreateProfileMutation(relay.ClientIDMutation):
             profile_name = input.get('profile_name')
             google_image_url = input.get('google_image_url')
 
-            user = get_user_model().objects.get(id=from_global_id(related_user_id)[1])
+            user = get_user_model().objects.get(
+                id=from_global_id(related_user_id)[1])
 
             profile = Profile(related_user=user,
                               profile_name=profile_name,
@@ -677,6 +678,14 @@ class Query(graphene.ObjectType):
     all_users = DjangoFilterConnectionField(UserNode)
     my_user_info = graphene.Field(UserNode)
 
+    # idea
+    idea = graphene.Field(IdeaNode, id=graphene.NonNull(graphene.ID))
+    all_ideas = DjangoFilterConnectionField(IdeaNode)
+
+    # memo
+    memo = graphene.Field(MemoNode, id=graphene.NonNull(graphene.ID))
+    all_memos = DjangoFilterConnectionField(MemoNode)
+
     def resolve_user(self, info, **kwargs):
         id = kwargs.get('id')
         return get_user_model().objects.get(id=from_global_id(id)[1])
@@ -694,9 +703,18 @@ class Query(graphene.ObjectType):
         id = kwargs.get('id')
         return Idea.objects.get(id=from_global_id(id)[1])
 
-    def resolve_all_publised_ideas(self, info, **kwargs):
+    def resolve_all_ideas(self, info, **kwargs):
         ideas = Idea.objects.filter(is_published=True)
         return ideas
+
+    # memo
+    def resolve_memo(self, info, **kwargs):
+        id = kwargs.get('id')
+        return Memo.objects.get(id=from_global_id(id)[1])
+
+    def resolve_all_memos(self, info, **kwargs):
+        memos = Memo.objects.filter(is_published=True)
+        return memos
 
 
 class Subscription(graphene.ObjectType):
