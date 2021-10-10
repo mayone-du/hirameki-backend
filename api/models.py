@@ -199,10 +199,12 @@ class Thread(models.Model):
     # 投稿タイプによって外部参照キーを変更
     target_idea = models.ForeignKey(Idea,
                                     null=True,
+                                    blank=True,
                                     related_name='target_idea',
                                     on_delete=models.CASCADE)
     target_memo = models.ForeignKey(Memo,
                                     null=True,
+                                    blank=True,
                                     related_name='target_memo',
                                     on_delete=models.CASCADE)
 
@@ -240,18 +242,24 @@ class Like(models.Model):
     # 投稿タイプによって外部参照キーを変更
     liked_idea = models.ForeignKey(Idea,
                                    null=True,
+                                   blank=True,
                                    related_name='liked_idea',
                                    on_delete=models.CASCADE)
     liked_memo = models.ForeignKey(Memo,
                                    null=True,
+                                   blank=True,
                                    related_name='liked_memo',
                                    on_delete=models.CASCADE)
     liked_comment = models.ForeignKey(Comment,
                                       null=True,
+                                      blank=True,
                                       related_name='liked_comment',
                                       on_delete=models.CASCADE)
     # いいねをしているかのフラグ
-    is_liked = models.BooleanField(default=False)
+    is_liked = models.BooleanField(default=True)
+
+    def __str__(self) -> str:
+        return self.like_target_type
 
 
 # ユーザーからユーザーへの通知

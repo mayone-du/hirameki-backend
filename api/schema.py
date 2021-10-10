@@ -733,7 +733,7 @@ class Query(graphene.ObjectType):
     # announce
     def resolve_all_announces(self, info, **kwargs):
         announces = Announce.objects.all()
-        return announces 
+        return announces
 
 
 class Subscription(graphene.ObjectType):
