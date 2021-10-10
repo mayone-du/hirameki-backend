@@ -62,11 +62,11 @@ class UserManager(BaseUserManager):
             user.save(using=self._db)
 
             # ユーザー作成時にメールを送信 superuser作成時はコメントアウト
-            send_mail(subject='サンプルアプリ | 本登録のお知らせ',
-                      message=f'ユーザー作成時にメール送信しています' + email,
-                      from_email="sample@email.com",
-                      recipient_list=[email],
-                      fail_silently=False)
+            # send_mail(subject='サンプルアプリ | 本登録のお知らせ',
+            #           message=f'ユーザー作成時にメール送信しています' + email,
+            #           from_email="sample@email.com",
+            #           recipient_list=[email],
+            #           fail_silently=False)
             return user
         except:
             raise
@@ -84,7 +84,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=100,
                                 null=False,
                                 blank=False,
-                                default="")
+                                default='')
     email = models.EmailField(max_length=50, unique=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

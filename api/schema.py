@@ -24,6 +24,7 @@ class UserNode(DjangoObjectType):
         filter_fields = {
             'username': ['exact', 'icontains'],
             'email': ['exact', 'icontains'],
+            'is_active': ['exact'],
             'is_staff': ['exact'],
             'is_superuser': ['exact'],
         }
@@ -686,6 +687,12 @@ class Query(graphene.ObjectType):
     memo = graphene.Field(MemoNode, id=graphene.NonNull(graphene.ID))
     all_memos = DjangoFilterConnectionField(MemoNode)
 
+    # notification
+    all_my_notifications = DjangoFilterConnectionField(NotificationNode)
+
+    # annouce
+    all_announce = DjangoFilterConnectionField(AnnounceNode)
+
     def resolve_user(self, info, **kwargs):
         id = kwargs.get('id')
         return get_user_model().objects.get(id=from_global_id(id)[1])
@@ -715,6 +722,18 @@ class Query(graphene.ObjectType):
     def resolve_all_memos(self, info, **kwargs):
         memos = Memo.objects.filter(is_published=True)
         return memos
+
+    # notification
+    @validate_token
+    def resolve_all_my_notifications(self, info, **kwargs):
+        user: User = get_user_model().objects.get(email=kwargs.get('email'))
+        notifications = Notification.objects.filter(notification_reciever=user)
+        return notifications
+
+    # announce
+    def resolve_all_announces(self, info, **kwargs):
+        announces = Announce.objects.all()
+        return announces 
 
 
 class Subscription(graphene.ObjectType):
