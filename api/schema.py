@@ -642,7 +642,7 @@ class Mutation(graphene.ObjectType):
 
     # follow
     create_follow = CreateFollowMutation.Field()
-    udpate_follow = UpdateFollowMutation.Field()
+    update_follow = UpdateFollowMutation.Field()
 
     # idea
     create_idea = CreateIdeaMutation.Field()
@@ -679,6 +679,9 @@ class Query(graphene.ObjectType):
     all_users = DjangoFilterConnectionField(UserNode)
     my_user_info = graphene.Field(UserNode)
 
+    # follow
+    my_followings = DjangoFilterConnectionField(FollowNode)
+
     # idea
     idea = graphene.Field(IdeaNode, id=graphene.NonNull(graphene.ID))
     all_ideas = DjangoFilterConnectionField(IdeaNode)
@@ -693,6 +696,7 @@ class Query(graphene.ObjectType):
     # annouce
     all_announce = DjangoFilterConnectionField(AnnounceNode)
 
+    # user
     def resolve_user(self, info, **kwargs):
         id = kwargs.get('id')
         return get_user_model().objects.get(id=from_global_id(id)[1])
@@ -704,6 +708,12 @@ class Query(graphene.ObjectType):
     def resolve_my_user_info(self, info):
         email = info.context.user.email
         return get_user_model().objects.get(email=email)
+
+    # follow
+    @validate_token
+    def resolve_my_followings(self, info, **kwargs):
+        user = get_user_model().objects.get(email=info.context.user.email)
+        return Follow.objects.filter(following_user=user)
 
     # idea
     def resolve_idea(self, info, **kwargs):

@@ -146,6 +146,9 @@ class Follow(models.Model):
     # フォローしているかの判定フラグ
     is_following = models.BooleanField(default=True)
 
+    def __str__(self) -> str:
+        return self.following_user.email + ' -> ' + self.followed_user.email
+
 
 # アイデアのトピック
 class Topic(models.Model):
@@ -207,6 +210,9 @@ class Thread(models.Model):
                                     blank=True,
                                     related_name='target_memo',
                                     on_delete=models.CASCADE)
+    
+    def __str__(self) -> str:
+        return self.thread_target_type
 
 
 # スレッドに付随するコメント
@@ -226,7 +232,7 @@ class Comment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return self.content
+        return self.commentor.email + ' : ' + self.content
 
 
 # 投稿に良いねしたときの中間テーブル
@@ -290,7 +296,7 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        return self.notification_type
+        return self.notificator.email + ' : ' + self.notification_type
 
 
 # 全体へのお知らせ
