@@ -3,7 +3,6 @@ import asyncio
 import graphene
 import graphql_social_auth
 from django.contrib.auth import get_user_model
-from django.db import models
 from graphene import relay
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.types import DjangoObjectType
@@ -193,8 +192,6 @@ class UpdateProfileMutation(relay.ClientIDMutation):
     def mutate_and_get_payload(root, info, **input):
         try:
             profile_id = input.get('profile_id')
-            print(profile_id)
-            print(from_global_id(profile_id)[1])
             profile_name = input.get('profile_name')
             google_image_url = input.get('google_image_url')
             self_introduction = input.get('self_introduction')
@@ -754,3 +751,17 @@ class Subscription(graphene.ObjectType):
             yield i
             await asyncio.sleep(1.)
         yield up_to
+
+    new_notifications = DjangoFilterConnectionField(
+        NotificationNode, user_id=graphene.ID(required=True))
+
+    async def resolve_new_notifications(root, info, **kwargs):
+        user_id = kwargs.get('user_id')
+        user = get_user_model().objects.get(id=from_global_id(user_id)[1])
+        print(user)
+        # print(user)
+        # while True:
+        #     print('hoge')
+        #     await asyncio.sleep(1)
+        #     yield Notification.objects.filter(notofication_reciever=user,
+        #                                       is_checked=False)

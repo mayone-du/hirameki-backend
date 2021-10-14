@@ -14,9 +14,8 @@ def validate_token(function):
             raise ValueError('401 Unauthorized')
         token_type = authorization[:6]
         if token_type != 'Bearer':
-            raise ValueError('not Bearer token!')
+            raise ValueError('Not Bearer Token!')
         token = authorization[7:]
-        # print(token)
         try:
             # Specify the CLIENT_ID of the app that accesses the backend:
             id_info = id_token.verify_oauth2_token(token, requests.Request())
@@ -35,8 +34,8 @@ def validate_token(function):
 
             # キーワード引数にemailを追加
             info.context.user.email = id_info['email']
-            # kwargs['login_user_email'] = id_info['email']
             return function(root, info, **kwargs)
         except ValueError:
-            raise ValueError('token is invalid')
+            raise
+
     return validate
