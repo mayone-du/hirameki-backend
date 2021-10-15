@@ -211,7 +211,7 @@ class Thread(models.Model):
                                     blank=True,
                                     related_name='target_memo',
                                     on_delete=models.CASCADE)
-    
+
     def __str__(self) -> str:
         return self.thread_target_type
 

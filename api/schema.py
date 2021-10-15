@@ -194,8 +194,13 @@ class UpdateProfileMutation(relay.ClientIDMutation):
             profile_id = input.get('profile_id')
             profile_name = input.get('profile_name')
             google_image_url = input.get('google_image_url')
+            profile_image = input.get('profile_image')
             self_introduction = input.get('self_introduction')
+            github_username = input.get('github_username')
+            twitter_username = input.get('twitter_username')
+            website_url = input.get('website_url')
 
+            print(profile_image)
             profile: Profile = Profile.objects.get(
                 id=from_global_id(profile_id)[1])
 
@@ -203,6 +208,10 @@ class UpdateProfileMutation(relay.ClientIDMutation):
                 profile.profile_name = profile_name
             if google_image_url is not None:
                 profile.google_image_url = google_image_url
+            if profile_image is not None:
+                profile.profile_image = profile_image
+                print('aaaaaa')
+                print(profile_image)
 
             profile.save()
 
@@ -335,7 +344,8 @@ class CreateMemoMutation(relay.ClientIDMutation):
     def mutate_and_get_payload(root, info, **input):
         try:
             title = input.get('title')
-            memo = Memo(title=title)
+            user = get_user_model().objects.get(email=info.context.user.email)
+            memo = Memo(title=title, memo_creator=user)
             memo.save()
             return
         except:
