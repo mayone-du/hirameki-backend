@@ -210,8 +210,14 @@ class UpdateProfileMutation(relay.ClientIDMutation):
                 profile.google_image_url = google_image_url
             if profile_image is not None:
                 profile.profile_image = profile_image
-                print('aaaaaa')
-                print(profile_image)
+            if self_introduction is not None:
+                profile.self_introduction = self_introduction
+            if github_username is not None:
+                profile.github_username =github_username 
+            if twitter_username is not None:
+                profile.twitter_username =twitter_username 
+            if website_url is not None:
+                profile.website_url =website_url 
 
             profile.save()
 
