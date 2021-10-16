@@ -200,7 +200,6 @@ class UpdateProfileMutation(relay.ClientIDMutation):
             twitter_username = input.get('twitter_username')
             website_url = input.get('website_url')
 
-            print(profile_image)
             profile: Profile = Profile.objects.get(
                 id=from_global_id(profile_id)[1])
 
@@ -213,11 +212,11 @@ class UpdateProfileMutation(relay.ClientIDMutation):
             if self_introduction is not None:
                 profile.self_introduction = self_introduction
             if github_username is not None:
-                profile.github_username =github_username 
+                profile.github_username = github_username
             if twitter_username is not None:
-                profile.twitter_username =twitter_username 
+                profile.twitter_username = twitter_username
             if website_url is not None:
-                profile.website_url =website_url 
+                profile.website_url = website_url
 
             profile.save()
 
@@ -353,7 +352,7 @@ class CreateMemoMutation(relay.ClientIDMutation):
             user = get_user_model().objects.get(email=info.context.user.email)
             memo = Memo(title=title, memo_creator=user)
             memo.save()
-            return
+            return CreateMemoMutation(memo=memo)
         except:
             raise
 
@@ -410,13 +409,18 @@ class CreateThreadMutation(relay.ClientIDMutation):
         try:
             thread_target_type = input.get('thread_target_type')
             # thread_target_typeは指定された値のみに限定する
-            if not thread_target_type in THREAD_CHOICES:
+
+            flag_list = []
+            for items in THREAD_CHOICES:
+                if thread_target_type in items:
+                    flag_list.append(True)
+            if True not in flag_list:
                 raise ValueError('thread_target_type error')
 
             # どちらか片方は必須にする
             target_idea_id = input.get('target_idea_id')
             target_memo_id = input.get('target_memo_id')
-            if (target_idea_id and target_memo_id) is None:
+            if not (target_idea_id or target_memo_id):
                 raise ValueError('Either id is required')
 
             thread = Thread(thread_target_type=thread_target_type)
@@ -692,16 +696,21 @@ class Query(graphene.ObjectType):
     all_users = DjangoFilterConnectionField(UserNode)
     my_user_info = graphene.Field(UserNode)
 
+    # profile
+    all_profiles = DjangoFilterConnectionField(ProfileNode)
+
     # follow
     my_followings = DjangoFilterConnectionField(FollowNode)
 
     # idea
     idea = graphene.Field(IdeaNode, id=graphene.NonNull(graphene.ID))
     all_ideas = DjangoFilterConnectionField(IdeaNode)
+    my_all_ideas = DjangoFilterConnectionField(IdeaNode)
 
     # memo
     memo = graphene.Field(MemoNode, id=graphene.NonNull(graphene.ID))
     all_memos = DjangoFilterConnectionField(MemoNode)
+    my_all_memos = DjangoFilterConnectionField(MemoNode)
 
     # notification
     all_my_notifications = DjangoFilterConnectionField(NotificationNode)
@@ -722,6 +731,9 @@ class Query(graphene.ObjectType):
         email = info.context.user.email
         return get_user_model().objects.get(email=email)
 
+    def resolve_all_profiles(self, info, **kwargs):
+        return Profile.objects.all()
+
     # follow
     @validate_token
     def resolve_my_followings(self, info, **kwargs):
@@ -737,6 +749,12 @@ class Query(graphene.ObjectType):
         ideas = Idea.objects.filter(is_published=True)
         return ideas
 
+    @validate_token
+    def resolve_my_all_ideas(self, info, **kwargs):
+        user = get_user_model().objects.get(email=info.context.user.email)
+        ideas = Idea.objects.filter(idea_creator=user)
+        return ideas
+
     # memo
     def resolve_memo(self, info, **kwargs):
         id = kwargs.get('id')
@@ -744,6 +762,12 @@ class Query(graphene.ObjectType):
 
     def resolve_all_memos(self, info, **kwargs):
         memos = Memo.objects.filter(is_published=True)
+        return memos
+
+    @validate_token
+    def resolve_my_all_memos(self, info, **kwargs):
+        user = get_user_model().objects.get(email=info.context.user.email)
+        memos = Memo.objects.filter(memo_creator=user)
         return memos
 
     # notification

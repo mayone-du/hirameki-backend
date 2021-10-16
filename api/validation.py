@@ -6,7 +6,7 @@ from google.oauth2 import id_token
 # 受け取ったトークンを解析して、トークンが有効であるかを調べる。
 def validate_token(function):
     def validate(root, info, **kwargs):
-        print(kwargs)
+        # print(kwargs)
         # Bearer token... の形式でトークンを受け取る。
         authorization = info.context.headers['authorization']
         # headersのauthorizationが空だった場合はエラー処理
