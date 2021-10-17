@@ -702,6 +702,11 @@ class Query(graphene.ObjectType):
     # follow
     my_followings = DjangoFilterConnectionField(FollowNode)
 
+    # topic
+    topic = graphene.Field(TopicNode,
+                           topic_name=graphene.NonNull(graphene.String))
+    all_topics = DjangoFilterConnectionField(TopicNode)
+
     # idea
     idea = graphene.Field(IdeaNode, id=graphene.NonNull(graphene.ID))
     all_ideas = DjangoFilterConnectionField(IdeaNode)
@@ -739,6 +744,15 @@ class Query(graphene.ObjectType):
     def resolve_my_followings(self, info, **kwargs):
         user = get_user_model().objects.get(email=info.context.user.email)
         return Follow.objects.filter(following_user=user)
+
+    # topic
+    def resolve_topic(self, info, **kwargs):
+        topic_name = kwargs.get('topic_name')
+        topic = Topic.objects.get(name=topic_name)
+        return topic
+
+    def resolve_all_topics(self, info, **kwargs):
+        return Topic.objects.all()
 
     # idea
     def resolve_idea(self, info, **kwargs):

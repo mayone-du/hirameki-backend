@@ -156,6 +156,13 @@ class Topic(models.Model):
                             unique=True,
                             null=False,
                             blank=False)
+    display_name = models.CharField(max_length=20,
+                                    unique=True,
+                                    null=False,
+                                    blank=False)
+
+    def __str__(self) -> str:
+        return self.name
 
 
 # しっかりしたアイデア
