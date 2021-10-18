@@ -121,14 +121,6 @@ class Profile(models.Model):
     # 自分のWebサイトのURL
     website_url = models.URLField(null=True, blank=True)
 
-    # # フォロー機能 自分がフォローしているユーザーはプロフィールモデルから、フォローされているユーザーはユーザーモデルから逆参照で取得
-    # following_users = models.ManyToManyField(
-    #     settings.AUTH_USER_MODEL,
-    #     related_name='following_users',
-    #     blank=True,
-    #     default=[],
-    # )
-
     def __str__(self) -> str:
         return self.profile_name
 
@@ -147,7 +139,11 @@ class Follow(models.Model):
     is_following = models.BooleanField(default=True)
 
     def __str__(self) -> str:
-        return self.following_user.email + ' -> ' + self.followed_user.email
+        str = self.following_user.related_user.profile_name + ' -> ' + self.followed_user.related_user.profile_name + ' : '
+        if self.is_following:
+            return str + 'true'
+        else:
+            return str + 'false'
 
 
 # アイデアのトピック
@@ -243,7 +239,7 @@ class Comment(models.Model):
         return self.commentor.email + ' : ' + self.content
 
 
-# 投稿に良いねしたときの中間テーブル
+# 投稿にいいねしたときの中間テーブル
 class Like(models.Model):
     liked_user = models.ForeignKey(settings.AUTH_USER_MODEL,
                                    related_name='liked_user',
@@ -273,6 +269,26 @@ class Like(models.Model):
     is_liked = models.BooleanField(default=True)
 
     def __str__(self) -> str:
+        if self.like_target_type == 'Idea':
+            str = self.liked_user.related_user.profile_name + ' -> ' + self.liked_idea.title + ' : '
+            if self.is_liked:
+                return str + 'true'
+            else:
+                return str + 'false'
+
+        if self.like_target_type == 'Memo':
+            str = self.liked_user.related_user.profile_name + ' -> ' + self.liked_memo.title + ' : '
+            if self.is_liked:
+                return str + 'true'
+            else:
+                return str + 'false'
+
+        if self.like_target_type == 'Comment':
+            str = self.liked_user.related_user.profile_name + ' -> ' + self.liked_comment.content + ' : '
+            if self.is_liked:
+                return str + 'true'
+            else:
+                return str + 'false'
         return self.like_target_type
 
 
@@ -304,7 +320,7 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        return self.notificator.email + ' : ' + self.notification_type
+        return self.notificator.related_user.profile_name + ' : ' + self.notification_type
 
 
 # 全体へのお知らせ

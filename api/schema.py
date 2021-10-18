@@ -286,6 +286,9 @@ class CreateIdeaMutation(relay.ClientIDMutation):
             title = input.get('title')
             content = input.get('content')
             topic_ids = input.get('topic_ids')
+
+            if title == '':
+                raise ValueError('title is must')
             idea = Idea(idea_creator=user, title=title, content=content)
             # TODO
             # for topic_id in topic_ids:
@@ -301,6 +304,8 @@ class UpdateIdeaMutation(relay.ClientIDMutation):
         idea_id = graphene.ID(required=True)
         title = graphene.String(required=False)
         content = graphene.String(required=False)
+        topic_ids = graphene.List(graphene.ID)
+        is_published = graphene.Boolean(required=False)
 
     idea = graphene.Field(IdeaNode)
 
@@ -310,6 +315,12 @@ class UpdateIdeaMutation(relay.ClientIDMutation):
             idea_id = input.get('idea_id')
             title = input.get('title')
             content = input.get('content')
+            topic_ids = input.get('topic_ids')
+            is_published = input.get('is_published')
+
+            if title == '':
+                raise ValueError('title is must')
+
             idea: Idea = Idea.objects.get(id=from_global_id(idea_id)[1])
             if title is not None:
                 idea.title = title
@@ -523,13 +534,17 @@ class CreateLikeMutation(relay.ClientIDMutation):
     def mutate_and_get_payload(root, info, **input):
         try:
             like_target_type = input.get('like_target_type')
-            if not like_target_type in LIKE_CHOICES:
+            flag_list = []
+            for items in LIKE_CHOICES:
+                if like_target_type in items:
+                    flag_list.append(True)
+            if True not in flag_list:
                 raise ValueError('like_target_type error')
 
             liked_idea_id = input.get('liked_idea_id')
             liked_memo_id = input.get('liked_memo_id')
             liked_comment_id = input.get('liked_comment_id')
-            if (liked_idea_id and liked_memo_id and liked_comment_id) is None:
+            if not (liked_idea_id or liked_memo_id or liked_comment_id):
                 raise ValueError('Either id is required')
 
             user = get_user_model().objects.get(email=info.context.user.email)
@@ -707,6 +722,10 @@ class Query(graphene.ObjectType):
                            topic_name=graphene.NonNull(graphene.String))
     all_topics = DjangoFilterConnectionField(TopicNode)
 
+    # like
+    my_like_ideas = DjangoFilterConnectionField(LikeNode)
+    my_like_memos = DjangoFilterConnectionField(LikeNode)
+
     # idea
     idea = graphene.Field(IdeaNode, id=graphene.NonNull(graphene.ID))
     all_ideas = DjangoFilterConnectionField(IdeaNode)
@@ -753,6 +772,19 @@ class Query(graphene.ObjectType):
 
     def resolve_all_topics(self, info, **kwargs):
         return Topic.objects.all()
+
+    # like
+    @validate_token
+    def resolve_my_like_ideas(self, info, **kwargs):
+        user = get_user_model().objects.get(email=info.context.user.email)
+        likes = Like.objects.filter(liked_user=user, like_target_type='Idea')
+        return likes
+
+    @validate_token
+    def resolve_my_like_memos(self, info, **kwargs):
+        user = get_user_model().objects.get(email=info.context.user.email)
+        likes = Like.objects.filter(liked_user=user, like_target_type='Memo')
+        return likes
 
     # idea
     def resolve_idea(self, info, **kwargs):
