@@ -274,6 +274,7 @@ class CreateIdeaMutation(relay.ClientIDMutation):
     class Input:
         title = graphene.String(required=True)
         content = graphene.String(required=True)
+        is_published = graphene.Boolean(required=False)
         topic_ids = graphene.List(graphene.ID)
 
     idea = graphene.Field(IdeaNode)
@@ -285,11 +286,15 @@ class CreateIdeaMutation(relay.ClientIDMutation):
 
             title = input.get('title')
             content = input.get('content')
+            is_published = input.get('is_published')
             topic_ids = input.get('topic_ids')
 
             if title == '':
                 raise ValueError('title is must')
-            idea = Idea(idea_creator=user, title=title, content=content)
+            idea = Idea(idea_creator=user,
+                        title=title,
+                        content=content,
+                        is_publised=is_published)
             # TODO
             # for topic_id in topic_ids:
             #     pass
@@ -326,6 +331,9 @@ class UpdateIdeaMutation(relay.ClientIDMutation):
                 idea.title = title
             if content is not None:
                 idea.content = content
+            if is_published is not None:
+                idea.is_published = is_published
+
             idea.save()
             return CreateIdeaMutation(idea=idea)
         except:
@@ -842,10 +850,20 @@ class Subscription(graphene.ObjectType):
         NotificationNode, user_id=graphene.ID(required=True))
 
     async def resolve_new_notifications(root, info, **kwargs):
-        user_id = kwargs.get('user_id')
-        user = get_user_model().objects.get(id=from_global_id(user_id)[1])
-        print(user)
-        # print(user)
+        # from asgiref.sync import sync_to_async
+        notifications = Notification.objects.all()
+        # notifications = sync_to_async(Notification.objects.all())
+        print(notifications)
+        return notifications
+        # ideas = sync_to_async(Idea.objects.all())
+        # print(ideas)
+        # messages = asyncio.get_event_loop()
+        # print(messages)
+        # user_id = await kwargs.get('user_id')
+        # print(user_id)
+        # user = await get_user_model().objects.get(id=from_global_id(user_id)[1]
+        #   )
+        # await print(user)
         # while True:
         #     print('hoge')
         #     await asyncio.sleep(1)
