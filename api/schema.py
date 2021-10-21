@@ -294,7 +294,7 @@ class CreateIdeaMutation(relay.ClientIDMutation):
             idea = Idea(idea_creator=user,
                         title=title,
                         content=content,
-                        is_publised=is_published)
+                        is_published=is_published)
             # TODO
             # for topic_id in topic_ids:
             #     pass
